@@ -1,12 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StudentForm from './components/StudentForm';
 import SubjectForm from './components/SubjectForm';
 import ResultForm from './components/ResultForm';
 import Rankings from './components/Rankings';
 import StudentPerformance from './components/StudentPerformance';
+import Auth from './components/Auth';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('students');
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+  };
+
+  if (!user) {
+    return <Auth onLogin={handleLogin} />;
+  }
 
   const styles = {
     container: {
@@ -18,7 +40,33 @@ const App = () => {
       textAlign: 'center',
       color: 'white',
       marginBottom: '40px',
-      paddingTop: '30px'
+      paddingTop: '30px',
+      position: 'relative'
+    },
+    userInfo: {
+      position: 'absolute',
+      top: '30px',
+      right: '20px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '15px',
+      fontSize: '0.85rem'
+    },
+    username: {
+      fontWeight: '600',
+      opacity: 0.9
+    },
+    logoutBtn: {
+      padding: '8px 20px',
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      color: 'white',
+      border: '1px solid rgba(255,255,255,0.3)',
+      borderRadius: '50px',
+      cursor: 'pointer',
+      fontSize: '0.8rem',
+      fontWeight: '600',
+      transition: 'all 0.3s ease',
+      backdropFilter: 'blur(5px)'
     },
     titleWrapper: {
       display: 'flex',
@@ -83,6 +131,17 @@ const App = () => {
   return (
     <div style={styles.container}>
       <header style={styles.header}>
+        <div style={styles.userInfo}>
+          <span style={styles.username}>👤 {user.username}</span>
+          <button 
+            style={styles.logoutBtn}
+            onClick={handleLogout}
+            onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.3)'}
+            onMouseLeave={(e) => e.target.style.backgroundColor = 'rgba(255,255,255,0.2)'}
+          >
+            Logout
+          </button>
+        </div>
         <div style={styles.titleWrapper}>
           <span style={styles.icon}>📚</span>
           <h1 style={styles.title}>Online Exam System</h1>

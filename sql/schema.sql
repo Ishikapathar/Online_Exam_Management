@@ -5,6 +5,16 @@ DROP TABLE IF EXISTS results;
 DROP TABLE IF EXISTS exams;
 DROP TABLE IF EXISTS subjects;
 DROP TABLE IF EXISTS students;
+DROP TABLE IF EXISTS users;
+
+-- Create users table for authentication
+CREATE TABLE users (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Create students table
 CREATE TABLE students (

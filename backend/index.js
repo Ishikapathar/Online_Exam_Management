@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 
+const authRouter = require('./routes/auth');
 const studentsRouter = require('./routes/students');
 const examsRouter = require('./routes/exams');
 const subjectsRouter = require('./routes/subjects');
@@ -15,6 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRouter);
 app.use('/api/students', studentsRouter);
 app.use('/api/exams', examsRouter);
 app.use('/api/subjects', subjectsRouter);
