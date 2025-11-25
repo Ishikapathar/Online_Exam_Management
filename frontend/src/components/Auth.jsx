@@ -5,6 +5,9 @@ const API_URL = 'http://localhost:5000/api';
 
 const Auth = ({ onLogin }) => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -20,25 +23,73 @@ const Auth = ({ onLogin }) => {
 
     try {
       if (isLogin) {
+        // Login - Send OTP
         const response = await axios.post(`${API_URL}/auth/login`, {
           email: formData.email,
           password: formData.password
         });
-        localStorage.setItem('user', JSON.stringify(response.data));
-        setSuccess('Login successful!');
-        setTimeout(() => onLogin(response.data), 1000);
+        
+        if (response.data.requiresOTP) {
+          // Show OTP verification form
+          setOtpEmail(response.data.email);
+          setShowOTPVerification(true);
+          setSuccess(response.data.message + ' 📧');
+        }
       } else {
+        // Signup - Send OTP
         const response = await axios.post(`${API_URL}/auth/register`, formData);
-        setSuccess('Registration successful! Please login.');
-        setTimeout(() => {
-          setIsLogin(true);
+        if (response.data.requiresOTP) {
+          // Show OTP verification form
+          setOtpEmail(response.data.email);
+          setShowOTPVerification(true);
+          setSuccess(response.data.message + ' 📧');
           setFormData({ username: '', email: '', password: '' });
-        }, 2000);
+        }
       }
     } catch (err) {
       setError(err.response?.data?.error || 'An error occurred');
     }
   };
+
+  const handleOTPVerification = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await axios.post(`${API_URL}/auth/verify-otp`, {
+        email: otpEmail,
+        otp: otp
+      });
+      
+      if (response.data.loginSuccess) {
+        // Store user data and login
+        localStorage.setItem('user', JSON.stringify(response.data));
+        setSuccess(response.data.message + ' 🎉');
+        setTimeout(() => {
+          onLogin(response.data);
+        }, 1000);
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'OTP verification failed');
+    }
+  };
+
+  const handleResendOTP = async () => {
+    setError('');
+    setSuccess('');
+
+    try {
+      await axios.post(`${API_URL}/auth/resend-otp`, {
+        email: otpEmail
+      });
+      setSuccess('OTP resent! Check your email. 📧');
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to resend OTP');
+    }
+  };
+
+
 
   const styles = {
     container: {
@@ -138,6 +189,88 @@ const Auth = ({ onLogin }) => {
       border: '1px solid #cfc'
     }
   };
+
+  // OTP verification form
+  if (showOTPVerification) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.card}>
+          <div style={styles.icon}>🔐</div>
+          <h1 style={styles.title}>Enter OTP</h1>
+          <p style={styles.subtitle}>
+            OTP sent to <strong>{otpEmail}</strong>
+          </p>
+          <div style={{
+            backgroundColor: '#e3f2fd',
+            border: '2px solid #2196f3',
+            borderRadius: '8px',
+            padding: '16px',
+            marginBottom: '20px',
+            fontSize: '0.95rem',
+            color: '#1565c0',
+            textAlign: 'center'
+          }}>
+            📧 <strong>Check Your Email:</strong> We've sent a 6-digit verification code to your email address.
+          </div>
+
+          {error && (
+            <div style={{ ...styles.alert, ...styles.error }}>
+              {error}
+            </div>
+          )}
+          
+          {success && (
+            <div style={{ ...styles.alert, ...styles.success }}>
+              {success}
+            </div>
+          )}
+
+          <form onSubmit={handleOTPVerification} style={styles.form}>
+            <div style={styles.inputGroup}>
+              <label style={styles.label}>OTP Code</label>
+              <input
+                type="text"
+                style={{...styles.input, textAlign: 'center', fontSize: '1.5rem', letterSpacing: '0.5rem'}}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength="6"
+                required
+              />
+            </div>
+
+            <button type="submit" style={styles.button}>
+              Verify OTP
+            </button>
+          </form>
+
+          <div style={styles.switchText}>
+            Didn't receive the OTP?{' '}
+            <span 
+              style={styles.switchLink}
+              onClick={handleResendOTP}
+            >
+              Resend OTP
+            </span>
+          </div>
+
+          <div style={styles.switchText}>
+            <span 
+              style={styles.switchLink}
+              onClick={() => {
+                setShowOTPVerification(false);
+                setOtp('');
+                setError('');
+                setSuccess('');
+              }}
+            >
+              ← Back to Login
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
